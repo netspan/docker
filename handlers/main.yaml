@@ -1,0 +1,6 @@
+---
+- name: Updating apt cache after Adding Docker repository
+  apt:
+    update_cache: yes
+  listen:
+   - update apt cache for docker

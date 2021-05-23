@@ -1,0 +1,55 @@
+---
+- name: Uninstalling obsolete versions of Docker packages
+  apt:
+    update_cache: true
+    cache_valid_time: "3600"
+    state: absent
+    name:
+    - docker
+    - docker-engine
+    - docker.io
+    - containerd
+    - runc
+
+- name: Adding Docker’s official GPG key
+  apt_key:
+    id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+    url: https://download.docker.com/linux/debian/gpg
+    state: present
+  notify:
+    - update apt cache for docker
+
+- name: Fetching "dpkg --print-architecture" for apt
+  # this is not easily available as a fact
+  command: dpkg --print-architecture
+  register: result
+  changed_when: false
+
+- name: Adding Docker repository
+  vars:
+    arch: "{{result.stdout}}"
+  apt_repository:
+    repo: "deb [arch={{arch}}] https://download.docker.com/linux/debian {{ansible_distribution_release}} stable"
+    filename: docker
+    state: present
+  notify:
+    - update apt cache for docker
+
+- name: Flushing handlers
+  meta: flush_handlers
+
+- name: Installing Docker
+  apt:
+    update_cache: true
+    cache_valid_time: "3600"
+    state: present
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+
+- name: Making sure docker services are enabled and started
+  service:
+    name: docker
+    enabled: yes
+    state: started
